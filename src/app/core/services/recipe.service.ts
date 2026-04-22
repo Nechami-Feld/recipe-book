@@ -1,5 +1,6 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { Recipe, RecipeCategory, Ingredient } from '../models/recipe.model';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { Recipe, RecipeCategory } from '../models/recipe.model';
+import { SearchHistoryService } from './search-history.service';
 
 const STORAGE_KEY = 'recipe-book-data';
 
@@ -174,8 +175,15 @@ export class RecipeService {
 
   readonly favorites = computed(() => this._recipes().filter(r => r.isFavorite));
 
+  private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly searchHistory = inject(SearchHistoryService);
+
   setSearch(query: string): void {
     this._searchQuery.set(query);
+    if (this._debounceTimer) clearTimeout(this._debounceTimer);
+    if (query.trim().length >= 2) {
+      this._debounceTimer = setTimeout(() => this.searchHistory.add(query), 1500);
+    }
   }
 
   setCategory(category: RecipeCategory | 'all'): void {
