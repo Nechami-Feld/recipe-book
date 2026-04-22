@@ -5,13 +5,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { RecipeService } from '../../core/services/recipe.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { StepTimerComponent } from '../../shared/components/step-timer.component';
 import { CATEGORY_LABELS } from '../../core/models/recipe.model';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, StepTimerComponent],
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
@@ -99,7 +100,13 @@ import { trigger, transition, style, animate } from '@angular/animations';
                   @for (step of steps(); track $index; let i = $index) {
                     <div class="step" [class.step--active]="currentStep() === i" (click)="currentStep.set(i)">
                       <div class="step__number">{{ i + 1 }}</div>
-                      <div class="step__text">{{ step }}</div>
+                      <div class="step__body">
+                        <div class="step__text">{{ step }}</div>
+                        <app-step-timer
+                          [stepId]="recipe()!.id + '-step-' + i"
+                          [stepLabel]="'שלב ' + (i + 1)"
+                        />
+                      </div>
                     </div>
                   }
                   <div class="step-nav">
@@ -198,7 +205,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
     }
-    .step__text { color: var(--text-primary); line-height: 1.6; padding-top: 0.25rem; }
+    .step__body { display: flex; flex-direction: column; gap: 0.6rem; flex: 1; min-width: 0; }
+    .step__text { color: var(--text-primary); line-height: 1.6; }
     .step-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; color: var(--text-secondary); }
     .detail-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .btn-fav, .btn-secondary, .btn-danger, .btn-primary {
