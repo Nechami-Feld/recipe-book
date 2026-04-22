@@ -9,6 +9,9 @@ import { RecentlyViewedService } from '../../core/services/recently-viewed.servi
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { StepTimerComponent } from '../../shared/components/step-timer.component';
 import { RelatedRecipesComponent } from '../../shared/components/related-recipes.component';
+import { ShareCardDialogComponent } from '../../shared/components/share-card-dialog.component';
+import { QrCodeDialogComponent } from '../../shared/components/qr-code-dialog.component';
+import { PdfExportService } from '../../core/services/pdf-export.service';
 import { CATEGORY_LABELS } from '../../core/models/recipe.model';
 import { trigger, transition, style, animate } from '@angular/animations';
 
@@ -155,6 +158,13 @@ import { trigger, transition, style, animate } from '@angular/animations';
             <button class="btn-secondary" [routerLink]="['/recipes', recipe()!.id, 'edit']">✏️ עריכה</button>
             <button class="btn-danger" (click)="deleteRecipe()">🗑️ מחיקה</button>
             <button class="btn-secondary" (click)="printRecipe()">🖨️ הדפסה</button>
+            <button class="btn-share" (click)="shareCard()">📤 שתף</button>
+            <button class="btn-qr" (click)="showQr()">📱 QR</button>
+            <button class="btn-pdf" (click)="exportPdf()" [disabled]="exportingPdf()">
+              @if (exportingPdf()) { <span class="spinner-sm"></span> }
+              @else { 📄 }
+              PDF
+            </button>
           </div>
         </div>
       </div>
@@ -283,6 +293,34 @@ import { trigger, transition, style, animate } from '@angular/animations';
     .btn-danger { background: #fee2e2; color: #dc2626; border: 2px solid #fca5a5; }
     .btn-danger:hover { background: #dc2626; color: white; }
     .btn-primary { background: var(--primary); color: white; }
+    .btn-share {
+      padding: 0.75rem 1.25rem; border-radius: 10px; border: none;
+      cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: linear-gradient(135deg, #4f46e5, #818cf8); color: white;
+    }
+    .btn-share:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-qr {
+      padding: 0.75rem 1.25rem; border-radius: 10px; border: 2px solid var(--border);
+      cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--card-bg); color: var(--text-primary);
+    }
+    .btn-qr:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .btn-pdf {
+      padding: 0.75rem 1.25rem; border-radius: 10px; border: 2px solid var(--border);
+      cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--card-bg); color: var(--text-primary);
+    }
+    .btn-pdf:hover:not(:disabled) { border-color: #ef4444; color: #ef4444; background: #fee2e2; }
+    .btn-pdf:disabled { opacity: 0.6; cursor: not-allowed; }
+    .spinner-sm {
+      width: 14px; height: 14px; border: 2px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .not-found { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
     .not-found h2 { color: var(--text-primary); margin: 1rem 0; }
   `],
@@ -399,6 +437,44 @@ export class RecipeDetailComponent implements OnInit {
         this.toastService.success('המתכון נמחק');
         this.router.navigate(['/recipes']);
       }
+    });
+  }
+
+  private readonly pdfService = inject(PdfExportService);
+  readonly exportingPdf = signal(false);
+
+  async exportPdf(): Promise<void> {
+    const r = this.recipe();
+    if (!r) return;
+    this.exportingPdf.set(true);
+    try {
+      await this.pdfService.export(r);
+      this.toastService.success('ה-PDF הורד בהצלחה 📄');
+    } catch {
+      this.toastService.error('שגיאה ביצוא ה-PDF');
+    } finally {
+      this.exportingPdf.set(false);
+    }
+  }
+
+  showQr(): void {
+    const r = this.recipe();
+    if (!r) return;
+    this.dialog.open(QrCodeDialogComponent, {
+      data: { title: r.title, recipeId: r.id },
+      maxWidth: '420px',
+      width: '90vw',
+    });
+  }
+
+  shareCard(): void {
+    const r = this.recipe();
+    if (!r) return;
+    this.dialog.open(ShareCardDialogComponent, {
+      data: r,
+      maxWidth: '480px',
+      width: '90vw',
+      panelClass: 'share-dialog-panel',
     });
   }
 
