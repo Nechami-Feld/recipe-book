@@ -6,6 +6,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { RecipeService } from '../../core/services/recipe.service';
 import { ToastService } from '../../core/services/toast.service';
 import { OcrService } from '../../core/services/ocr.service';
+import { UrlImportService } from '../../core/services/url-import.service';
 import { CATEGORY_LABELS, RecipeCategory } from '../../core/models/recipe.model';
 
 @Component({
@@ -31,6 +32,28 @@ import { CATEGORY_LABELS, RecipeCategory } from '../../core/models/recipe.model'
             <div class="ocr-loading">
               <div class="spinner"></div>
               <span>מחלץ מתכון מהתמונה...</span>
+            </div>
+          }
+        </div>
+
+        <!-- URL Import -->
+        <div class="ocr-section">
+          <div class="url-import-area">
+            <input
+              [value]="urlImport()"
+              (input)="urlImport.set($any($event.target).value)"
+              placeholder="הדבק קישור למתכון (טאסטי, BBC Good Food וכו׳)"
+              class="input"
+            />
+            <button type="button" class="btn-import" (click)="onUrlImport()" [disabled]="urlLoading() || !urlImport()">
+              @if (urlLoading()) { <span class="spinner-sm"></span> }
+              {{ urlLoading() ? 'טוען...' : '🔗 ייבא מ-URL' }}
+            </button>
+          </div>
+          @if (urlLoading()) {
+            <div class="ocr-loading" style="margin-top: 0.75rem">
+              <div class="spinner"></div>
+              <span>מחלץ מתכון מהקישור...</span>
             </div>
           }
         </div>
@@ -172,6 +195,11 @@ import { CATEGORY_LABELS, RecipeCategory } from '../../core/models/recipe.model'
     .ocr-label:hover { background: var(--primary-light); }
     .ocr-icon { font-size: 1.5rem; }
     .ocr-loading { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; color: var(--text-secondary); }
+    .url-import-area { display: flex; gap: 0.5rem; }
+    .url-import-area .input { flex: 1; }
+    .btn-import { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0.75rem 1.25rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+    .btn-import:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-import:disabled { opacity: 0.6; cursor: not-allowed; }
     .recipe-form { display: flex; flex-direction: column; gap: 1.5rem; }
     .form-section { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; box-shadow: var(--card-shadow); }
     .form-section h2 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; color: var(--text-primary); }
@@ -248,9 +276,12 @@ export class RecipeFormComponent implements OnInit {
   private readonly recipeService = inject(RecipeService);
   private readonly toastService = inject(ToastService);
   private readonly ocrService = inject(OcrService);
+  private readonly urlImportService = inject(UrlImportService);
 
   readonly saving = signal(false);
   readonly ocrLoading = signal(false);
+  readonly urlImport = signal('');
+  readonly urlLoading = signal(false);
   readonly imagePreview = signal<string | null>(null);
   readonly tagsInput = signal('');
   readonly parsedTags = computed(() =>
@@ -353,6 +384,37 @@ export class RecipeFormComponent implements OnInit {
       error: () => {
         this.ocrLoading.set(false);
         this.toastService.error('שגיאה בחילוץ המתכון');
+      },
+    });
+  }
+
+  onUrlImport(): void {
+    const url = this.urlImport().trim();
+    if (!url) return;
+    this.urlLoading.set(true);
+    this.urlImportService.extractFromUrl(url).subscribe({
+      next: result => {
+        this.form.patchValue({
+          title: result.title,
+          description: result.description,
+          instructions: result.instructions,
+          category: result.category,
+          servings: result.servings,
+          prepTime: result.prepTime,
+          cookTime: result.cookTime,
+          imageUrl: result.imageUrl,
+        });
+        this.ingredientsArray.clear();
+        result.ingredients.forEach(ing => this.addIngredient(ing.name, ing.amount, ing.unit));
+        this.tagsInput.set(result.tags.join(', '));
+        this.imagePreview.set(result.imageUrl);
+        this.urlImport.set('');
+        this.urlLoading.set(false);
+        this.toastService.success('המתכון יובא בהצלחה מהקישור! 🌐');
+      },
+      error: () => {
+        this.urlLoading.set(false);
+        this.toastService.error('שגיאה בייבוא המתכון מהקישור');
       },
     });
   }
