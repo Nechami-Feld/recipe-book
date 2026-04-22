@@ -18,6 +18,9 @@ import { ToastComponent } from './shared/components/toast.component';
             <span class="brand-text">חוברת מתכונים</span>
           </a>
           <div class="navbar__links">
+            <a class="nav-link" [routerLink]="['/dashboard']" routerLinkActive="nav-link--active">
+              📊 דשבורד
+            </a>
             <a class="nav-link" [routerLink]="['/recipes']" routerLinkActive="nav-link--active" [routerLinkActiveOptions]="{exact: true}">
               📋 מתכונים
             </a>

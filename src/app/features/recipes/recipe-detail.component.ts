@@ -1,9 +1,10 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { RecipeService } from '../../core/services/recipe.service';
 import { ToastService } from '../../core/services/toast.service';
+import { RecentlyViewedService } from '../../core/services/recently-viewed.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { StepTimerComponent } from '../../shared/components/step-timer.component';
 import { CATEGORY_LABELS } from '../../core/models/recipe.model';
@@ -226,12 +227,18 @@ import { trigger, transition, style, animate } from '@angular/animations';
     .not-found h2 { color: var(--text-primary); margin: 1rem 0; }
   `],
 })
-export class RecipeDetailComponent {
+export class RecipeDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recipeService = inject(RecipeService);
   private readonly toastService = inject(ToastService);
+  private readonly recentlyViewed = inject(RecentlyViewedService);
   private readonly dialog = inject(MatDialog);
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) this.recentlyViewed.add(id);
+  }
 
   readonly categoryLabels = CATEGORY_LABELS;
   readonly stepMode = signal(false);

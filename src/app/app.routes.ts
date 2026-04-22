@@ -27,5 +27,9 @@ export const routes: Routes = [
     path: 'favorites',
     loadComponent: () => import('./features/favorites/favorites.component').then(m => m.FavoritesComponent),
   },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+  },
   { path: '**', redirectTo: 'recipes' },
 ];
