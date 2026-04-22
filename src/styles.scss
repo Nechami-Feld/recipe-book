@@ -1,1 +1,111 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+/* ===== MATERIAL THEME ===== */
+$recipe-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$violet-palette,
+  ),
+  typography: (
+    brand-family: 'Heebo',
+    plain-family: 'Heebo',
+  ),
+  density: (scale: 0),
+));
+
+html {
+  @include mat.all-component-themes($recipe-theme);
+}
+
+/* ===== CSS VARIABLES - LIGHT ===== */
+:root {
+  --primary: #4f46e5;
+  --primary-dark: #3730a3;
+  --primary-light: #eef2ff;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --navbar-bg: rgba(255, 255, 255, 0.92);
+  --input-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --hover-bg: #f1f5f9;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 10px 25px rgba(0,0,0,0.12), 0 4px 6px rgba(0,0,0,0.07);
+  --tag-bg: #e0e7ff;
+  --tag-color: #4338ca;
+  --skeleton-base: #e2e8f0;
+  --skeleton-shine: #f8fafc;
+}
+
+/* ===== CSS VARIABLES - DARK ===== */
+[data-theme="dark"], .dark {
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #1e1b4b;
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --navbar-bg: rgba(15, 23, 42, 0.92);
+  --input-bg: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --hover-bg: #334155;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --card-shadow-hover: 0 10px 25px rgba(0,0,0,0.4), 0 4px 6px rgba(0,0,0,0.3);
+  --tag-bg: #1e1b4b;
+  --tag-color: #a5b4fc;
+  --skeleton-base: #334155;
+  --skeleton-shine: #475569;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ===== MATERIAL OVERRIDES ===== */
+.mat-mdc-dialog-container {
+  direction: rtl;
+  font-family: 'Heebo', sans-serif !important;
+}
+
+.mat-mdc-dialog-surface {
+  border-radius: 16px !important;
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .navbar, .detail-actions, .back-btn, .mode-toggle, app-toast { display: none !important; }
+  .detail-hero { height: 200px; }
+  .detail-body { padding: 1rem 0; }
+  body { background: white; color: black; }
+}
+
+/* ===== VIEW TRANSITIONS ===== */
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes fade-out { to { opacity: 0; transform: translateY(-8px); } }
+
+::view-transition-old(root) { animation: 200ms ease-in fade-out; }
+::view-transition-new(root) { animation: 300ms ease-out fade-in; }
