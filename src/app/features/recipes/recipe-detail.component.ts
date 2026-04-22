@@ -4,11 +4,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { RecipeService } from '../../core/services/recipe.service';
+import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { RecentlyViewedService } from '../../core/services/recently-viewed.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { StepTimerComponent } from '../../shared/components/step-timer.component';
 import { RelatedRecipesComponent } from '../../shared/components/related-recipes.component';
+import { ReviewsComponent } from '../../shared/components/reviews.component';
+import { AddReviewComponent, ReviewSubmission } from '../../shared/components/add-review.component';
 import { ShareCardDialogComponent } from '../../shared/components/share-card-dialog.component';
 import { QrCodeDialogComponent } from '../../shared/components/qr-code-dialog.component';
 import { PdfExportService } from '../../core/services/pdf-export.service';
@@ -18,7 +21,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, StepTimerComponent, RelatedRecipesComponent],
+  imports: [CommonModule, RouterLink, FormsModule, StepTimerComponent, RelatedRecipesComponent, ReviewsComponent, AddReviewComponent],
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
@@ -171,6 +174,14 @@ import { trigger, transition, style, animate } from '@angular/animations';
 
       <!-- Related Recipes -->
       <app-related-recipes [recipeId]="recipe()!.id" />
+
+      <!-- Reviews Section -->
+      <app-add-review (reviewSubmitted)="onAddReview($event)" />
+      <app-reviews
+        [reviews]="recipe()?.reviews || []"
+        [canDelete]="false"
+        (deleteReview)="onDeleteReview($event)"
+      />
 
     } @else {
       <div class="not-found">
@@ -329,7 +340,9 @@ export class RecipeDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recipeService = inject(RecipeService);
+  private readonly reviewService = inject(ReviewService);
   private readonly toastService = inject(ToastService);
+  private readonly pdfExportService = inject(PdfExportService);
   private readonly recentlyViewed = inject(RecentlyViewedService);
   private readonly dialog = inject(MatDialog);
 
@@ -485,5 +498,27 @@ export class RecipeDetailComponent implements OnInit {
 
   onImgError(e: Event): void {
     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=600';
+  }
+
+  onAddReview(review: ReviewSubmission): void {
+    const recipe = this.recipe();
+    if (!recipe) return;
+    try {
+      this.reviewService.addReview(recipe.id, review.author, review.rating, review.comment);
+      this.toastService.success('הביקורה נוספה בהצלחה! 🌟');
+    } catch (err) {
+      this.toastService.error('שגיאה בהוספת הביקורה');
+    }
+  }
+
+  onDeleteReview(reviewId: string): void {
+    const recipe = this.recipe();
+    if (!recipe) return;
+    try {
+      this.reviewService.deleteReview(recipe.id, reviewId);
+      this.toastService.success('הביקורה נמחקה');
+    } catch (err) {
+      this.toastService.error('שגיאה במחיקת הביקורה');
+    }
   }
 }

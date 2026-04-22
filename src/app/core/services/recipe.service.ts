@@ -28,6 +28,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 4,
     tags: ['איטלקי', 'צמחוני', 'קל'],
     isFavorite: false,
+    reviews: [],
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
   },
@@ -51,6 +52,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 8,
     tags: ['שוקולד', 'עוגה', 'קינוח'],
     isFavorite: true,
+    reviews: [],
     createdAt: new Date('2024-02-10'),
     updatedAt: new Date('2024-02-10'),
   },
@@ -74,6 +76,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 4,
     tags: ['בריא', 'טבעוני', 'קל'],
     isFavorite: false,
+    reviews: [],
     createdAt: new Date('2024-03-05'),
     updatedAt: new Date('2024-03-05'),
   },
@@ -97,6 +100,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 2,
     tags: ['ישראלי', 'ביצים', 'ארוחת בוקר'],
     isFavorite: true,
+    reviews: [],
     createdAt: new Date('2024-03-20'),
     updatedAt: new Date('2024-03-20'),
   },
@@ -119,6 +123,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 6,
     tags: ['קיץ', 'קר', 'רענן'],
     isFavorite: false,
+    reviews: [],
     createdAt: new Date('2024-04-01'),
     updatedAt: new Date('2024-04-01'),
   },
@@ -142,6 +147,7 @@ const MOCK_RECIPES: Recipe[] = [
     servings: 6,
     tags: ['ישראלי', 'טבעוני', 'בריא'],
     isFavorite: false,
+    reviews: [],
     createdAt: new Date('2024-04-15'),
     updatedAt: new Date('2024-04-15'),
   },
@@ -194,11 +200,12 @@ export class RecipeService {
     return this._recipes().find(r => r.id === id);
   }
 
-  add(data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'isFavorite'>): Recipe {
+  add(data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'isFavorite' | 'reviews'>): Recipe {
     const recipe: Recipe = {
       ...data,
       id: generateId(),
       isFavorite: false,
+      reviews: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };

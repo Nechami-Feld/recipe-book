@@ -7,6 +7,14 @@ export interface Ingredient {
   unit: string;
 }
 
+export interface Review {
+  id: string;
+  author: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -20,6 +28,7 @@ export interface Recipe {
   servings: number;
   tags: string[];
   isFavorite: boolean;
+  reviews: Review[];
   createdAt: Date;
   updatedAt: Date;
 }
