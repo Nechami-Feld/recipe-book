@@ -1,6 +1,7 @@
 import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { RecipeService } from '../../core/services/recipe.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -14,7 +15,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, StepTimerComponent, RelatedRecipesComponent],
+  imports: [CommonModule, RouterLink, FormsModule, StepTimerComponent, RelatedRecipesComponent],
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
@@ -65,6 +66,29 @@ import { trigger, transition, style, animate } from '@angular/animations';
             </div>
           </div>
 
+          <!-- Servings Scaler -->
+          <div class="scaler">
+            <span class="scaler__label">🍽️ מנות:</span>
+            <button class="scaler__btn" (click)="decreaseServings()" [disabled]="currentServings() <= 1">−</button>
+            <div class="scaler__slider-wrap">
+              <input
+                class="scaler__slider"
+                type="range"
+                [min]="1"
+                [max]="maxServings()"
+                [value]="currentServings()"
+                (input)="currentServings.set(+$any($event.target).value)"
+              />
+            </div>
+            <button class="scaler__btn" (click)="increaseServings()" [disabled]="currentServings() >= maxServings()">+</button>
+            <span class="scaler__value">{{ currentServings() }}</span>
+            @if (currentServings() !== recipe()!.servings) {
+              <button class="scaler__reset" (click)="currentServings.set(recipe()!.servings)" title="אפס">
+                ↺ {{ recipe()!.servings }}
+              </button>
+            }
+          </div>
+
           <!-- Tags -->
           <div class="tags-row">
             @for (tag of recipe()!.tags; track tag) {
@@ -83,9 +107,11 @@ import { trigger, transition, style, animate } from '@angular/animations';
             <section class="ingredients-section">
               <h2>🥘 רכיבים</h2>
               <ul class="ingredients-list">
-                @for (ing of recipe()!.ingredients; track ing.id; let i = $index) {
+                @for (ing of scaledIngredients(); track ing.id; let i = $index) {
                   <li class="ingredient-item" [class.highlighted]="stepMode() && currentStep() === i">
-                    <span class="ingredient-amount">{{ ing.amount }} {{ ing.unit }}</span>
+                    <span class="ingredient-amount" [class.amount--changed]="currentServings() !== recipe()!.servings">
+                      {{ ing.scaledAmount }} {{ ing.unit }}
+                    </span>
                     <span class="ingredient-name">{{ ing.name }}</span>
                   </li>
                 }
@@ -179,6 +205,35 @@ import { trigger, transition, style, animate } from '@angular/animations';
     .stat-icon { font-size: 1.5rem; }
     .stat-value { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
     .stat-label { font-size: 0.75rem; color: var(--text-secondary); }
+    .scaler {
+      display: flex; align-items: center; gap: 0.6rem;
+      background: var(--card-bg); border-radius: 12px; padding: 0.75rem 1rem;
+      box-shadow: var(--card-shadow); margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .scaler__label { font-size: 0.88rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+    .scaler__btn {
+      width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border);
+      background: var(--card-bg); color: var(--text-primary); font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; font-weight: 700; flex-shrink: 0;
+    }
+    .scaler__btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .scaler__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .scaler__slider-wrap { flex: 1; min-width: 100px; }
+    .scaler__slider {
+      width: 100%; accent-color: var(--primary); cursor: pointer; height: 4px;
+    }
+    .scaler__value {
+      font-size: 1.2rem; font-weight: 900; color: var(--primary);
+      min-width: 2ch; text-align: center;
+    }
+    .scaler__reset {
+      background: var(--hover-bg); border: 1.5px solid var(--border); border-radius: 20px;
+      padding: 0.2rem 0.65rem; font-size: 0.78rem; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .scaler__reset:hover { border-color: var(--primary); color: var(--primary); }
+    .amount--changed { color: #f59e0b !important; }
     .tags-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .tag { background: var(--tag-bg); color: var(--tag-color); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
     .mode-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: var(--card-bg); border-radius: 12px; padding: 0.25rem; width: fit-content; }
@@ -242,16 +297,33 @@ export class RecipeDetailComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) this.recentlyViewed.add(id);
+    if (id) {
+      this.recentlyViewed.add(id);
+      const recipe = this.recipeService.getById(id);
+      if (recipe) this.currentServings.set(recipe.servings);
+    }
   }
 
   readonly categoryLabels = CATEGORY_LABELS;
   readonly stepMode = signal(false);
   readonly currentStep = signal(0);
+  readonly currentServings = signal(1);
 
   readonly recipe = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
     return id ? this.recipeService.getById(id) : undefined;
+  });
+
+  readonly maxServings = computed(() => Math.max(20, (this.recipe()?.servings ?? 4) * 4));
+
+  readonly scaledIngredients = computed(() => {
+    const r = this.recipe();
+    if (!r) return [];
+    const ratio = this.currentServings() / r.servings;
+    return r.ingredients.map(ing => ({
+      ...ing,
+      scaledAmount: this.scaleAmount(ing.amount, ratio),
+    }));
   });
 
   readonly steps = computed(() =>
@@ -261,6 +333,52 @@ export class RecipeDetailComponent implements OnInit {
   readonly formattedInstructions = computed(() =>
     this.recipe()?.instructions.replace(/\n/g, '<br>') ?? ''
   );
+
+  // מחשב כמות משוקללת - תומך במספרים, שברים (בסלש ובנקודה) וטקסט חופשי
+  private scaleAmount(amount: string, ratio: number): string {
+    const trimmed = amount.trim();
+    if (!trimmed) return trimmed;
+
+    // שבר עם קו נטוי או רווח - למשל 1/2, 3/4
+    const fractionMatch = trimmed.match(/^(\d+)\/(\d+)$/);
+    if (fractionMatch) {
+      const val = parseInt(fractionMatch[1]) / parseInt(fractionMatch[2]) * ratio;
+      return this.formatNumber(val);
+    }
+
+    // מספר שלם ושבר - למשל 1 1/2
+    const mixedMatch = trimmed.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+    if (mixedMatch) {
+      const val = (parseInt(mixedMatch[1]) + parseInt(mixedMatch[2]) / parseInt(mixedMatch[3])) * ratio;
+      return this.formatNumber(val);
+    }
+
+    // מספר רגיל (כולל עשרוני)
+    const numMatch = trimmed.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    if (numMatch) {
+      const val = parseFloat(numMatch[1]) * ratio;
+      return this.formatNumber(val) + numMatch[2];
+    }
+
+    // טקסט חופשי (למשל "קמצוץ") - לא משנה
+    return trimmed;
+  }
+
+  private formatNumber(n: number): string {
+    if (n === 0) return '0';
+    // שברים ניקיים
+    const fractions: [number, string][] = [[0.25,'¼'],[0.5,'½'],[0.75,'¾'],[0.33,'⅓'],[0.67,'⅔']];
+    const whole = Math.floor(n);
+    const decimal = n - whole;
+    const frac = fractions.find(([v]) => Math.abs(decimal - v) < 0.08);
+    if (frac) return whole > 0 ? `${whole}${frac[1]}` : frac[1];
+    // עיגול לספרתיים
+    if (n < 10) return parseFloat(n.toFixed(1)).toString();
+    return Math.round(n).toString();
+  }
+
+  increaseServings(): void { this.currentServings.update(s => Math.min(s + 1, this.maxServings())); }
+  decreaseServings(): void { this.currentServings.update(s => Math.max(1, s - 1)); }
 
   toggleFavorite(): void {
     const r = this.recipe();
