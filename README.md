@@ -1,59 +1,86 @@
-# RecipeBook
+# Recipe Book
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.18.
+An Angular recipe application with support for recipe browsing, favorites, PDF export, QR code sharing, and server-side rendering.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- Browse a list of recipes with details and ingredients
+- Mark recipes as favorites
+- Share recipe cards using QR codes
+- Export recipes or cards as PDF documents
+- Search history and recently viewed recipe tracking
+- Responsive UI built with Angular Material
+- Server-side rendering support for faster initial loading
 
-```bash
-ng serve
-```
+## Tech stack
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular 19
+- Angular Material
+- Angular Universal (SSR)
+- Express.js
+- html2canvas and jsPDF for PDF export
+- qrcode for QR code generation
 
-## Code scaffolding
+## Getting started
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Install dependencies:
 
 ```bash
-ng build
+npm install
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Start the development server:
 
 ```bash
-ng test
+npm start
 ```
 
-## Running end-to-end tests
+Open your browser to `http://localhost:4200/`.
 
-For end-to-end (e2e) testing, run:
+## Development
+
+To run a live development build with file watching:
 
 ```bash
-ng e2e
+npm run watch
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Server-Side Rendering
 
-## Additional Resources
+Build the SSR application and start the server:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```bash
+npm run build
+npm run serve:ssr:recipe-book
+```
+
+Then open `http://localhost:4200/`.
+
+## Build
+
+Create a production build:
+
+```bash
+npm run build
+```
+
+The compiled output is stored in the `dist/` directory.
+
+## Tests
+
+Run unit tests with Karma:
+
+```bash
+npm test
+```
+
+## Project structure
+
+- `src/app/core/` – services, models, and shared application logic
+- `src/app/features/` – feature components for recipes, favorites, and dashboard
+- `src/app/shared/` – shared reusable UI components such as dialogs and skeleton loaders
+- `src/public/` – static assets and SSR entry points
+
+## Notes
+
+This repository uses Angular CLI conventions and is configured for both client-side and server-side rendering. Adjust component templates, services, and routes as needed for further recipe app functionality.
