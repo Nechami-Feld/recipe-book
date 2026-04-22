@@ -7,13 +7,14 @@ import { ToastService } from '../../core/services/toast.service';
 import { RecentlyViewedService } from '../../core/services/recently-viewed.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { StepTimerComponent } from '../../shared/components/step-timer.component';
+import { RelatedRecipesComponent } from '../../shared/components/related-recipes.component';
 import { CATEGORY_LABELS } from '../../core/models/recipe.model';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, StepTimerComponent],
+  imports: [CommonModule, RouterLink, StepTimerComponent, RelatedRecipesComponent],
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
@@ -131,6 +132,10 @@ import { trigger, transition, style, animate } from '@angular/animations';
           </div>
         </div>
       </div>
+
+      <!-- Related Recipes -->
+      <app-related-recipes [recipeId]="recipe()!.id" />
+
     } @else {
       <div class="not-found">
         <div style="font-size: 4rem">🔍</div>

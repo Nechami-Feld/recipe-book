@@ -250,6 +250,31 @@ export class RecipeService {
     } catch { /* ignore */ }
   }
 
+  getSimilar(id: string, limit = 4): Recipe[] {
+    const source = this.getById(id);
+    if (!source) return [];
+
+    const sourceTags = new Set(source.tags.map(t => t.toLowerCase()));
+    const sourceIngredients = new Set(source.ingredients.map(i => i.name.toLowerCase()));
+
+    return this._recipes()
+      .filter(r => r.id !== id)
+      .map(r => {
+        let score = 0;
+        // קטגוריה זהה - הכי חשוב
+        if (r.category === source.category) score += 10;
+        // תגיות משותפות
+        r.tags.forEach(t => { if (sourceTags.has(t.toLowerCase())) score += 3; });
+        // רכיבים משותפים
+        r.ingredients.forEach(i => { if (sourceIngredients.has(i.name.toLowerCase())) score += 2; });
+        return { recipe: r, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ recipe }) => recipe);
+  }
+
   generateIngredientId(): string {
     return generateId();
   }
