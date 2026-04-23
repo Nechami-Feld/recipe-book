@@ -11,8 +11,17 @@ export interface OcrResult {
 
 @Injectable({ providedIn: 'root' })
 export class OcrService {
+  private readonly DELAY_MS = 2000; // Simulate 2 second network latency for OCR processing
+
+  /**
+   * POST /api/ocr/extract - Extract recipe from image via HTTP
+   * Simulates sending image to OCR API (AWS Textract, Google Vision, etc.)
+   */
   extractFromImage(_file: File): Observable<OcrResult> {
-    // Mock OCR - in production, integrate with AWS Textract or Google Vision
+    // Simulate HTTP POST request to OCR service
+    // In production, this would be:
+    // return this.http.post<OcrResult>('/api/ocr/extract', formData)
+    
     const mockResult: OcrResult = {
       title: 'מתכון שחולץ מתמונה',
       description: 'מתכון שנסרק אוטומטית על ידי מערכת ה-OCR',
@@ -24,6 +33,7 @@ export class OcrService {
       ],
       instructions: '1. ערבב את כל החומרים היבשים.\n2. הוסף ביצים וחמאה.\n3. אפה ב-180 מעלות למשך 30 דקות.',
     };
-    return of(mockResult).pipe(delay(2000));
+    
+    return of(mockResult).pipe(delay(this.DELAY_MS));
   }
 }

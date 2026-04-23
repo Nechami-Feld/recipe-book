@@ -1,8 +1,7 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Recipe, RecipeCategory } from '../models/recipe.model';
 import { SearchHistoryService } from './search-history.service';
-
-const STORAGE_KEY = 'recipe-book-data';
+import { BackendApiService } from './backend-api.service';
 
 function generateId(): string {
   return Math.random().toString(36).slice(2, 11);
@@ -155,15 +154,17 @@ const MOCK_RECIPES: Recipe[] = [
 
 @Injectable({ providedIn: 'root' })
 export class RecipeService {
-  private readonly _recipes = signal<Recipe[]>(this.loadFromStorage());
+  private readonly _recipes = signal<Recipe[]>([]);
   private readonly _searchQuery = signal('');
   private readonly _selectedCategory = signal<RecipeCategory | 'all'>('all');
   private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
 
   readonly recipes = this._recipes.asReadonly();
   readonly searchQuery = this._searchQuery.asReadonly();
   readonly selectedCategory = this._selectedCategory.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
 
   readonly filteredRecipes = computed(() => {
     const query = this._searchQuery().toLowerCase();
@@ -183,6 +184,32 @@ export class RecipeService {
 
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchHistory = inject(SearchHistoryService);
+  private readonly api = inject(BackendApiService);
+
+  constructor() {
+    // Load recipes from API on service initialization
+    this.loadRecipes();
+  }
+
+  /**
+   * Load all recipes from database via HTTP
+   */
+  private loadRecipes(): void {
+    this._loading.set(true);
+    this._error.set(null);
+    
+    this.api.getAllRecipes().subscribe({
+      next: (recipes) => {
+        this._recipes.set(recipes);
+        this._loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load recipes:', err);
+        this._error.set('Failed to load recipes from database');
+        this._loading.set(false);
+      },
+    });
+  }
 
   setSearch(query: string): void {
     this._searchQuery.set(query);
@@ -200,61 +227,116 @@ export class RecipeService {
     return this._recipes().find(r => r.id === id);
   }
 
+  /**
+   * Add new recipe to database via HTTP
+   * Returns the ID optimistically, syncs with server asynchronously
+   */
   add(data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'isFavorite' | 'reviews'>): Recipe {
-    const recipe: Recipe = {
+    // Generate ID optimistically for immediate navigation
+    const optimisticId = generateId();
+    const optimisticRecipe: Recipe = {
       ...data,
-      id: generateId(),
+      id: optimisticId,
       isFavorite: false,
       reviews: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this._recipes.update(list => [...list, recipe]);
-    this.saveToStorage();
-    return recipe;
+    
+    // Add to local state immediately for responsive UI
+    this._recipes.update(list => [...list, optimisticRecipe]);
+    
+    // Sync with server asynchronously
+    this._loading.set(true);
+    this._error.set(null);
+
+    this.api.createRecipe({
+      ...data,
+      isFavorite: false,
+      reviews: [],
+    }).subscribe({
+      next: (newRecipe) => {
+        // Update with server-generated ID and timestamps if different
+        this._recipes.update(list =>
+          list.map(r => r.id === optimisticId ? newRecipe : r)
+        );
+        this._loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to add recipe:', err);
+        this._error.set('Failed to add recipe to database');
+        // Remove optimistic entry on error
+        this._recipes.update(list => list.filter(r => r.id !== optimisticId));
+        this._loading.set(false);
+      },
+    });
+
+    // Return optimistic recipe for immediate navigation
+    return optimisticRecipe;
   }
 
+  /**
+   * Update recipe in database via HTTP
+   */
   update(id: string, data: Partial<Omit<Recipe, 'id' | 'createdAt'>>): void {
-    this._recipes.update(list =>
-      list.map(r => r.id === id ? { ...r, ...data, updatedAt: new Date() } : r)
-    );
-    this.saveToStorage();
+    this._loading.set(true);
+    this._error.set(null);
+
+    this.api.updateRecipe(id, data).subscribe({
+      next: (updatedRecipe) => {
+        this._recipes.update(list =>
+          list.map(r => r.id === id ? updatedRecipe : r)
+        );
+        this._loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to update recipe:', err);
+        this._error.set('Failed to update recipe in database');
+        this._loading.set(false);
+      },
+    });
   }
 
+  /**
+   * Delete recipe from database via HTTP
+   */
   delete(id: string): void {
-    this._recipes.update(list => list.filter(r => r.id !== id));
-    this.saveToStorage();
+    this._loading.set(true);
+    this._error.set(null);
+
+    this.api.deleteRecipe(id).subscribe({
+      next: () => {
+        this._recipes.update(list => list.filter(r => r.id !== id));
+        this._loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to delete recipe:', err);
+        this._error.set('Failed to delete recipe from database');
+        this._loading.set(false);
+      },
+    });
   }
 
+  /**
+   * Toggle favorite status via HTTP
+   */
   toggleFavorite(id: string): void {
-    this._recipes.update(list =>
-      list.map(r => r.id === id ? { ...r, isFavorite: !r.isFavorite } : r)
-    );
-    this.saveToStorage();
-  }
+    this._loading.set(true);
+    this._error.set(null);
 
-  private loadFromStorage(): Recipe[] {
-    try {
-      if (typeof localStorage === 'undefined') return MOCK_RECIPES;
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return MOCK_RECIPES;
-      const parsed = JSON.parse(data) as Recipe[];
-      return parsed.map(r => ({
-        ...r,
-        createdAt: new Date(r.createdAt),
-        updatedAt: new Date(r.updatedAt),
-      }));
-    } catch {
-      return MOCK_RECIPES;
-    }
-  }
-
-  private saveToStorage(): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this._recipes()));
-      }
-    } catch { /* ignore */ }
+    this.api.toggleFavorite(id).subscribe({
+      next: (updatedRecipe) => {
+        this._recipes.update(list =>
+          list.map(r => r.id === id ? updatedRecipe : r)
+        );
+        this._loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to toggle favorite:', err);
+        this._error.set('Failed to update favorite status');
+        this._loading.set(false);
+      },
+    });
   }
 
   getSimilar(id: string, limit = 4): Recipe[] {
@@ -286,3 +368,4 @@ export class RecipeService {
     return generateId();
   }
 }
+
