@@ -4,24 +4,25 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { RecipeService } from '../../core/services/recipe.service';
-import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { RecentlyViewedService } from '../../core/services/recently-viewed.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { StepTimerComponent } from '../../shared/components/step-timer.component';
 import { RelatedRecipesComponent } from '../../shared/components/related-recipes.component';
-import { ReviewsComponent } from '../../shared/components/reviews.component';
-import { AddReviewComponent, ReviewSubmission } from '../../shared/components/add-review.component';
 import { ShareCardDialogComponent } from '../../shared/components/share-card-dialog.component';
 import { QrCodeDialogComponent } from '../../shared/components/qr-code-dialog.component';
 import { PdfExportService } from '../../core/services/pdf-export.service';
 import { CATEGORY_LABELS } from '../../core/models/recipe.model';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { ReviewService } from '@core/services/review.service';
+import { AddReviewComponent, ReviewSubmission } from '@shared/components/add-review.component';
+import { ReviewsComponent } from '@shared/components/reviews.component';
 
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, StepTimerComponent, RelatedRecipesComponent, ReviewsComponent, AddReviewComponent],
+  imports: [CommonModule, RouterLink, FormsModule, StepTimerComponent, RelatedRecipesComponent,
+     ReviewsComponent, AddReviewComponent],
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
@@ -100,6 +101,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
                 ↺ {{ recipe()!.servings }}
               </button>
             }
+            </div>
           }
 
           <!-- Tags -->
