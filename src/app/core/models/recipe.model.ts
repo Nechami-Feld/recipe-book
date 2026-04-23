@@ -7,6 +7,32 @@ export interface Ingredient {
   unit: string;
 }
 
+// Shape returned by the backend
+export interface ApiIngredient {
+  id: string;
+  name: string;
+  quantity: string;
+}
+
+export interface ApiRecipe {
+  id: string;
+  title: string;
+  description: string;
+  ingredients: ApiIngredient[];
+  instructions: string;
+  isFavorite: boolean;
+  category: string;
+  createdAt: string;
+}
+
+export interface ApiPagedResponse<T> {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  items: T[];
+}
+
 export interface Review {
   id: string;
   author: string;

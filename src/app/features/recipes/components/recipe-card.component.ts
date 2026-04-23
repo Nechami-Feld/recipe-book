@@ -33,15 +33,21 @@ import { Recipe, CATEGORY_LABELS } from '../../../core/models/recipe.model';
         <h3 class="recipe-card__title">{{ recipe.title }}</h3>
         <p class="recipe-card__desc">{{ recipe.description }}</p>
         <div class="recipe-card__meta">
-          <span class="meta-item" title="זמן הכנה">⏱️ {{ recipe.prepTime + recipe.cookTime }} דק'</span>
-          <span class="meta-item" title="מנות">🍽️ {{ recipe.servings }}</span>
+          @if (recipe.prepTime + recipe.cookTime > 0) {
+            <span class="meta-item" title="זמן הכנה">⏱️ {{ recipe.prepTime + recipe.cookTime }} דק'</span>
+          }
+          @if (recipe.servings > 0) {
+            <span class="meta-item" title="מנות">🍽️ {{ recipe.servings }}</span>
+          }
           <span class="meta-item" title="רכיבים">🥗 {{ recipe.ingredients.length }}</span>
         </div>
-        <div class="recipe-card__tags">
-          @for (tag of recipe.tags.slice(0, 3); track tag) {
-            <span class="tag">{{ tag }}</span>
-          }
-        </div>
+        @if (recipe.tags.length > 0) {
+          <div class="recipe-card__tags">
+            @for (tag of recipe.tags.slice(0, 3); track tag) {
+              <span class="tag">{{ tag }}</span>
+            }
+          </div>
+        }
       </div>
       <div class="recipe-card__actions">
         <button class="btn-icon" (click)="onEdit($event)" title="עריכה">✏️</button>

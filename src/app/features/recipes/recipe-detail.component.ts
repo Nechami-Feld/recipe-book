@@ -50,21 +50,27 @@ import { trigger, transition, style, animate } from '@angular/animations';
         <div class="detail-body">
           <!-- Meta Stats -->
           <div class="stats-row">
-            <div class="stat-card">
-              <span class="stat-icon">⏱️</span>
-              <span class="stat-value">{{ recipe()!.prepTime }}</span>
-              <span class="stat-label">דק' הכנה</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-icon">🔥</span>
-              <span class="stat-value">{{ recipe()!.cookTime }}</span>
-              <span class="stat-label">דק' בישול</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-icon">🍽️</span>
-              <span class="stat-value">{{ recipe()!.servings }}</span>
-              <span class="stat-label">מנות</span>
-            </div>
+            @if (recipe()!.prepTime > 0) {
+              <div class="stat-card">
+                <span class="stat-icon">⏱️</span>
+                <span class="stat-value">{{ recipe()!.prepTime }}</span>
+                <span class="stat-label">דק' הכנה</span>
+              </div>
+            }
+            @if (recipe()!.cookTime > 0) {
+              <div class="stat-card">
+                <span class="stat-icon">🔥</span>
+                <span class="stat-value">{{ recipe()!.cookTime }}</span>
+                <span class="stat-label">דק' בישול</span>
+              </div>
+            }
+            @if (recipe()!.servings > 0) {
+              <div class="stat-card">
+                <span class="stat-icon">🍽️</span>
+                <span class="stat-value">{{ recipe()!.servings }}</span>
+                <span class="stat-label">מנות</span>
+              </div>
+            }
             <div class="stat-card">
               <span class="stat-icon">🥗</span>
               <span class="stat-value">{{ recipe()!.ingredients.length }}</span>
@@ -73,7 +79,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
           </div>
 
           <!-- Servings Scaler -->
-          <div class="scaler">
+          @if (recipe()!.servings > 0) {
+            <div class="scaler">
             <span class="scaler__label">🍽️ מנות:</span>
             <button class="scaler__btn" (click)="decreaseServings()" [disabled]="currentServings() <= 1">−</button>
             <div class="scaler__slider-wrap">
@@ -93,14 +100,16 @@ import { trigger, transition, style, animate } from '@angular/animations';
                 ↺ {{ recipe()!.servings }}
               </button>
             }
-          </div>
+          }
 
           <!-- Tags -->
-          <div class="tags-row">
-            @for (tag of recipe()!.tags; track tag) {
-              <span class="tag">{{ tag }}</span>
-            }
-          </div>
+          @if (recipe()!.tags.length > 0) {
+            <div class="tags-row">
+              @for (tag of recipe()!.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+          }
 
           <!-- Mode Toggle -->
           <div class="mode-toggle">
@@ -370,7 +379,7 @@ export class RecipeDetailComponent implements OnInit {
   readonly scaledIngredients = computed(() => {
     const r = this.recipe();
     if (!r) return [];
-    const ratio = this.currentServings() / r.servings;
+    const ratio = r.servings > 0 ? this.currentServings() / r.servings : 1;
     return r.ingredients.map(ing => ({
       ...ing,
       scaledAmount: this.scaleAmount(ing.amount, ratio),
